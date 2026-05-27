@@ -1946,6 +1946,8 @@ func TestSetHTTPRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().HTTPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.HTTPRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// ping is stable → restWeight; pong is canary → desiredWeight
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[1].Weight)
@@ -1968,6 +1970,8 @@ func TestSetHTTPRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().HTTPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.HTTPRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// pong is stable → restWeight; ping is canary → desiredWeight
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[1].Weight)
@@ -1994,6 +1998,8 @@ func TestSetGRPCRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().GRPCRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.GRPCRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// ping is stable → restWeight; pong is canary → desiredWeight
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[1].Weight)
@@ -2016,6 +2022,8 @@ func TestSetGRPCRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().GRPCRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.GRPCRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// pong is stable → restWeight; ping is canary → desiredWeight
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[1].Weight)
@@ -2042,6 +2050,8 @@ func TestSetTCPRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// ping is stable → restWeight; pong is canary → desiredWeight
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[1].Weight)
@@ -2064,6 +2074,8 @@ func TestSetTCPRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// pong is stable → restWeight; ping is canary → desiredWeight
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[1].Weight)
@@ -2090,6 +2102,8 @@ func TestSetTLSRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// ping is stable → restWeight; pong is canary → desiredWeight
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[1].Weight)
@@ -2112,6 +2126,8 @@ func TestSetTLSRouteWeightPingPong(t *testing.T) {
 
 		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		assert.NoError(t, err)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
+		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
 		// pong is stable → restWeight; ping is canary → desiredWeight
 		assert.Equal(t, desiredWeight, *updated.Spec.Rules[0].BackendRefs[0].Weight)
 		assert.Equal(t, int32(100-desiredWeight), *updated.Spec.Rules[0].BackendRefs[1].Weight)
