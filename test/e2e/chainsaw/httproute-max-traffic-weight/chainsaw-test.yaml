@@ -1,0 +1,73 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: httproute-max-traffic-weight
+  labels:
+    route-type: http
+spec:
+  description: >
+    Verifies HTTPRoute traffic splitting with a custom maximum traffic weight calculates correct weight based on the maxTrafficWeight.
+  namespace: default
+  concurrent: true
+  steps:
+    - name: create-resources
+      description: Create Service(s), HTTPRoute and Rollout. maxTrafficWeight is 100000, canary step sets weight to 30000, and waits for 30s.
+      try:
+        - apply:
+            file: resources/services.yaml
+        - apply:
+            file: resources/httproute.yaml
+        - apply:
+            file: resources/rollout.yaml
+
+    - name: assert-initial-state
+      description: Initial HTTPRoute should set stable weight to 100000 and canary weight to 0.
+      try:
+        - assert:
+            timeout: 30s
+            file: assertions/httproute-initial.yaml
+
+    - name: wait-for-initial-healthy
+      description: Wait for the initial rollout to reach Healthy before triggering a canary.
+      try:
+        - assert:
+            timeout: 5m
+            file: assertions/rollout-healthy.yaml
+
+    - name: trigger-canary
+      description: Update the rollout image to start a canary (setWeight:30000 -> pause:30s).
+      try:
+        - patch:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                name: httproute-max-weight-rollout
+                namespace: default
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: rollouts-demo
+                        image: argoproj/rollouts-demo:green
+
+    - name: assert-custom-canary-weight
+      description: Plugin should set stable weight to 70000 and canary weight to 30000 when traffic is active.
+      try:
+        - assert:
+            timeout: 2m
+            file: assertions/httproute-canary.yaml
+
+    - name: assert-rollout-healthy
+      description: Wait for the canary to complete (30s pause auto-expires).
+      try:
+        - assert:
+            timeout: 5m
+            file: assertions/rollout-healthy.yaml
+
+    - name: assert-cleanup
+      description: Plugin should set stable weight to 100000 and canary weight to 0 after canary is complete.
+      try:
+        - assert:
+            timeout: 60s
+            file: assertions/httproute-after-cleanup.yaml
