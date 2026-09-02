@@ -136,11 +136,11 @@ func TestRunSuccessfully(t *testing.T) {
 		require.NoError(t, getErr)
 		assert.Equal(t, maxWeight-desiredWeight, *(updatedGRPC.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedGRPC.Spec.Rules[0].BackendRefs[1].Weight))
-		updatedTCP, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
+		updatedTCP, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		assert.Equal(t, maxWeight-desiredWeight, *(updatedTCP.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedTCP.Spec.Rules[0].BackendRefs[1].Weight))
-		updatedTLS, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
+		updatedTLS, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		assert.Equal(t, maxWeight-desiredWeight, *(updatedTLS.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedTLS.Spec.Rules[0].BackendRefs[1].Weight))
@@ -211,7 +211,7 @@ func TestRunSuccessfully(t *testing.T) {
 		err := pluginInstance.SetWeight(rollout, desiredWeight, []v1alpha1.WeightDestination{})
 
 		assert.Empty(t, err.Error())
-		updatedTCP, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
+		updatedTCP, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		assert.Equal(t, 100-desiredWeight, *(updatedTCP.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedTCP.Spec.Rules[0].BackendRefs[1].Weight))
@@ -227,13 +227,13 @@ func TestRunSuccessfully(t *testing.T) {
 
 		err := pluginInstance.SetWeight(rollout, 15, []v1alpha1.WeightDestination{})
 		assert.Empty(t, err.Error())
-		updatedTCP, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
+		updatedTCP, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		assert.Equal(t, defaults.InProgressLabelValue, updatedTCP.Labels[defaults.InProgressLabelKey])
 
 		err = pluginInstance.SetWeight(rollout, 0, []v1alpha1.WeightDestination{})
 		assert.Empty(t, err.Error())
-		updatedTCP, getErr = rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
+		updatedTCP, getErr = rpcPluginImp.GatewayAPIClientset.GatewayV1().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		_, exists := updatedTCP.Labels[defaults.InProgressLabelKey]
 		assert.False(t, exists)
@@ -248,7 +248,7 @@ func TestRunSuccessfully(t *testing.T) {
 		err := pluginInstance.SetWeight(rollout, desiredWeight, []v1alpha1.WeightDestination{})
 
 		assert.Empty(t, err.Error())
-		updatedTLS, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
+		updatedTLS, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		assert.Equal(t, 100-desiredWeight, *(updatedTLS.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedTLS.Spec.Rules[0].BackendRefs[1].Weight))
@@ -264,13 +264,13 @@ func TestRunSuccessfully(t *testing.T) {
 
 		err := pluginInstance.SetWeight(rollout, 60, []v1alpha1.WeightDestination{})
 		assert.Empty(t, err.Error())
-		updatedTLS, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
+		updatedTLS, getErr := rpcPluginImp.GatewayAPIClientset.GatewayV1().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		assert.Equal(t, defaults.InProgressLabelValue, updatedTLS.Labels[defaults.InProgressLabelKey])
 
 		err = pluginInstance.SetWeight(rollout, 0, []v1alpha1.WeightDestination{})
 		assert.Empty(t, err.Error())
-		updatedTLS, getErr = rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
+		updatedTLS, getErr = rpcPluginImp.GatewayAPIClientset.GatewayV1().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		_, exists := updatedTLS.Labels[defaults.InProgressLabelKey]
 		assert.False(t, exists)
@@ -306,11 +306,11 @@ func TestRunSuccessfully(t *testing.T) {
 		require.NoError(t, getErr)
 		assert.Equal(t, 100-desiredWeight, *(updatedHTTP.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedHTTP.Spec.Rules[0].BackendRefs[1].Weight))
-		updatedTCP, getErr2 := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
+		updatedTCP, getErr2 := rpcPluginImp.GatewayAPIClientset.GatewayV1().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr2)
 		assert.Equal(t, 100-desiredWeight, *(updatedTCP.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedTCP.Spec.Rules[0].BackendRefs[1].Weight))
-		updatedTLS, getErr3 := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
+		updatedTLS, getErr3 := rpcPluginImp.GatewayAPIClientset.GatewayV1().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		require.NoError(t, getErr3)
 		assert.Equal(t, 100-desiredWeight, *(updatedTLS.Spec.Rules[0].BackendRefs[0].Weight))
 		assert.Equal(t, desiredWeight, *(updatedTLS.Spec.Rules[0].BackendRefs[1].Weight))
@@ -2816,7 +2816,7 @@ func TestSetTCPRouteWeightPingPong(t *testing.T) {
 		rpcErr := rpcPluginImp.SetWeight(rollout, desiredWeight, []v1alpha1.WeightDestination{})
 		assert.Empty(t, rpcErr.Error())
 
-		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
+		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
@@ -2840,7 +2840,7 @@ func TestSetTCPRouteWeightPingPong(t *testing.T) {
 		rpcErr := rpcPluginImp.SetWeight(rollout, desiredWeight, []v1alpha1.WeightDestination{})
 		assert.Empty(t, rpcErr.Error())
 
-		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
+		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().TCPRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TCPRouteName, metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
@@ -2868,7 +2868,7 @@ func TestSetTLSRouteWeightPingPong(t *testing.T) {
 		rpcErr := rpcPluginImp.SetWeight(rollout, desiredWeight, []v1alpha1.WeightDestination{})
 		assert.Empty(t, rpcErr.Error())
 
-		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
+		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
@@ -2892,7 +2892,7 @@ func TestSetTLSRouteWeightPingPong(t *testing.T) {
 		rpcErr := rpcPluginImp.SetWeight(rollout, desiredWeight, []v1alpha1.WeightDestination{})
 		assert.Empty(t, rpcErr.Error())
 
-		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1alpha2().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
+		updated, err := rpcPluginImp.GatewayAPIClientset.GatewayV1().TLSRoutes(mocks.RolloutNamespace).Get(context.Background(), mocks.TLSRouteName, metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PingServiceName), updated.Spec.Rules[0].BackendRefs[0].Name)
 		assert.Equal(t, gatewayv1.ObjectName(mocks.PongServiceName), updated.Spec.Rules[0].BackendRefs[1].Name)
