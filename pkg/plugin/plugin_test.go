@@ -2517,6 +2517,50 @@ func TestSetHTTPHeaderRouteSameHeaderNameDifferentValuesCoexist(t *testing.T) {
 	assert.Equal(t, "internal", route2.Matches[0].Headers[0].Value)
 }
 
+func TestDiscoverRoutesBySelector(t *testing.T) {
+	labels := map[string]string{"app": "test-app"}
+	selector := &metav1.LabelSelector{MatchLabels: labels}
+
+	tests := []struct {
+		name   string
+		route  runtime.Object
+		config *GatewayAPITrafficRouting
+		check  func(t *testing.T, config *GatewayAPITrafficRouting)
+	}{
+		{
+			name:   "TCPRoute",
+			route:  mocks.CreateTCPRouteWithLabels(mocks.TCPRouteName, labels),
+			config: &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, TCPRouteSelector: selector},
+			check: func(t *testing.T, config *GatewayAPITrafficRouting) {
+				require.Len(t, config.TCPRoutes, 1)
+				assert.Equal(t, mocks.TCPRouteName, config.TCPRoutes[0].Name)
+			},
+		},
+		{
+			name:   "TLSRoute",
+			route:  mocks.CreateTLSRouteWithLabels(mocks.TLSRouteName, labels),
+			config: &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, TLSRouteSelector: selector},
+			check: func(t *testing.T, config *GatewayAPITrafficRouting) {
+				require.Len(t, config.TLSRoutes, 1)
+				assert.Equal(t, mocks.TLSRouteName, config.TLSRoutes[0].Name)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rpcPluginImp := &RpcPlugin{
+				LogCtx:              utils.SetupLog("text"),
+				GatewayAPIClientset: gwFake.NewSimpleClientset(tt.route),
+			}
+
+			err := rpcPluginImp.discoverRoutesBySelector(nil, tt.config)
+			require.NoError(t, err)
+			tt.check(t, tt.config)
+		})
+	}
+}
+
 // TestSetRouteWeightSkipsUnchangedUpdate reproduces issue #230:
 // https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/issues/230
 func TestSetRouteWeightSkipsUnchangedUpdate(t *testing.T) {
