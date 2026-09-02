@@ -14,7 +14,10 @@ import (
 	rolloutsPlugin "github.com/argoproj/argo-rollouts/rollout/trafficrouting/plugin/rpc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stesting "k8s.io/client-go/testing"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	log "github.com/sirupsen/logrus"
@@ -2512,6 +2515,151 @@ func TestSetHTTPHeaderRouteSameHeaderNameDifferentValuesCoexist(t *testing.T) {
 	require.Len(t, route2.Matches, 1)
 	require.Len(t, route2.Matches[0].Headers, 1)
 	assert.Equal(t, "internal", route2.Matches[0].Headers[0].Value)
+}
+
+// TestSetRouteWeightSkipsUnchangedUpdate reproduces issue #230:
+// https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/issues/230
+func TestSetRouteWeightSkipsUnchangedUpdate(t *testing.T) {
+	tests := []struct {
+		name     string
+		route    runtime.Object
+		config   *GatewayAPITrafficRouting
+		resource string
+	}{
+		{
+			name:     "HTTPRoute",
+			route:    mocks.CreateHTTPRouteWithLabels(mocks.HTTPRouteName, nil),
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, HTTPRoute: mocks.HTTPRouteName},
+			resource: "httproutes",
+		},
+		{
+			name:     "GRPCRoute",
+			route:    mocks.CreateGRPCRouteWithLabels(mocks.GRPCRouteName, nil),
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, GRPCRoute: mocks.GRPCRouteName},
+			resource: "grpcroutes",
+		},
+		{
+			name:     "TCPRoute",
+			route:    mocks.CreateTCPRouteWithLabels(mocks.TCPRouteName, nil),
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, TCPRoute: mocks.TCPRouteName},
+			resource: "tcproutes",
+		},
+		{
+			name:     "TLSRoute",
+			route:    mocks.CreateTLSRouteWithLabels(mocks.TLSRouteName, nil),
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, TLSRoute: mocks.TLSRouteName},
+			resource: "tlsroutes",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gatewayClient := gwFake.NewSimpleClientset(tt.route)
+			rpcPluginImp := &RpcPlugin{
+				LogCtx:              utils.SetupLog("text"),
+				GatewayAPIClientset: gatewayClient,
+			}
+			rollout := newRollout(mocks.StableServiceName, mocks.CanaryServiceName, tt.config)
+
+			err := rpcPluginImp.SetWeight(rollout, 30, []v1alpha1.WeightDestination{})
+			require.Empty(t, err.Error())
+
+			countUpdates := func() int {
+				updates := 0
+				for _, action := range gatewayClient.Actions() {
+					if action.GetVerb() == "update" && action.GetResource().Resource == tt.resource {
+						updates++
+					}
+				}
+				return updates
+			}
+			require.Equal(t, 1, countUpdates(), "the initial weight and label change must update the %s", tt.name)
+
+			err = rpcPluginImp.SetWeight(rollout, 30, []v1alpha1.WeightDestination{})
+			require.Empty(t, err.Error())
+			require.Equal(t, 1, countUpdates(), "an unchanged desired state must not update the %s again", tt.name)
+		})
+	}
+}
+
+func TestSetRouteWeightUpdatesChangedLabelWhenWeightsAreUnchanged(t *testing.T) {
+	stableWeight := int32(70)
+	canaryWeight := int32(30)
+
+	httpRoute := mocks.CreateHTTPRouteWithLabels(mocks.HTTPRouteName, nil)
+	httpRoute.Spec.Rules[0].BackendRefs[0].Weight = &stableWeight
+	httpRoute.Spec.Rules[0].BackendRefs[1].Weight = &canaryWeight
+	grpcRoute := mocks.CreateGRPCRouteWithLabels(mocks.GRPCRouteName, nil)
+	grpcRoute.Spec.Rules[0].BackendRefs[0].Weight = &stableWeight
+	grpcRoute.Spec.Rules[0].BackendRefs[1].Weight = &canaryWeight
+	tcpRoute := mocks.CreateTCPRouteWithLabels(mocks.TCPRouteName, nil)
+	tcpRoute.Spec.Rules[0].BackendRefs[0].Weight = &stableWeight
+	tcpRoute.Spec.Rules[0].BackendRefs[1].Weight = &canaryWeight
+	tlsRoute := mocks.CreateTLSRouteWithLabels(mocks.TLSRouteName, nil)
+	tlsRoute.Spec.Rules[0].BackendRefs[0].Weight = &stableWeight
+	tlsRoute.Spec.Rules[0].BackendRefs[1].Weight = &canaryWeight
+
+	tests := []struct {
+		name     string
+		route    runtime.Object
+		config   *GatewayAPITrafficRouting
+		resource string
+	}{
+		{
+			name:     "HTTPRoute",
+			route:    httpRoute,
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, HTTPRoute: mocks.HTTPRouteName},
+			resource: "httproutes",
+		},
+		{
+			name:     "GRPCRoute",
+			route:    grpcRoute,
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, GRPCRoute: mocks.GRPCRouteName},
+			resource: "grpcroutes",
+		},
+		{
+			name:     "TCPRoute",
+			route:    tcpRoute,
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, TCPRoute: mocks.TCPRouteName},
+			resource: "tcproutes",
+		},
+		{
+			name:     "TLSRoute",
+			route:    tlsRoute,
+			config:   &GatewayAPITrafficRouting{Namespace: mocks.RolloutNamespace, TLSRoute: mocks.TLSRouteName},
+			resource: "tlsroutes",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gatewayClient := gwFake.NewSimpleClientset(tt.route)
+			rpcPluginImp := &RpcPlugin{
+				LogCtx:              utils.SetupLog("text"),
+				GatewayAPIClientset: gatewayClient,
+			}
+			rollout := newRollout(mocks.StableServiceName, mocks.CanaryServiceName, tt.config)
+
+			err := rpcPluginImp.SetWeight(rollout, 30, []v1alpha1.WeightDestination{})
+			require.Empty(t, err.Error())
+
+			updates := 0
+			var updatedRoute runtime.Object
+			for _, action := range gatewayClient.Actions() {
+				if action.GetVerb() == "update" && action.GetResource().Resource == tt.resource {
+					updates++
+					updateAction, ok := action.(k8stesting.UpdateAction)
+					require.True(t, ok)
+					updatedRoute = updateAction.GetObject()
+				}
+			}
+			require.Equal(t, 1, updates, "a changed in-progress label must update the %s", tt.name)
+
+			accessor, accessorErr := apimeta.Accessor(updatedRoute)
+			require.NoError(t, accessorErr)
+			require.Equal(t, defaults.InProgressLabelValue, accessor.GetLabels()[defaults.InProgressLabelKey])
+		})
+	}
 }
 
 // newPingPongRollout creates a Rollout configured with PingPong (no canaryService/stableService).
